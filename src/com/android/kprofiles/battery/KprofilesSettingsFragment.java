@@ -24,6 +24,7 @@ import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.UserHandle;
+import android.os.SystemProperties;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -55,6 +56,11 @@ public class KprofilesSettingsFragment extends PreferenceFragment implements
     public static final String ON = "Y";
     public static final String OFF = "N";
     public static final boolean IS_SUPPORTED = FileUtils.fileExists(KPROFILES_MODES_NODE);
+
+    public static final String POWERHAL_PROP = "vendor.powerhal.profile";
+    public static final String POWERHAL_BATT = "powersave";
+    public static final String POWERHAL_BALA = "balanced";
+    public static final String POWERHAL_PERF = "performance";
 
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
@@ -117,6 +123,30 @@ public class KprofilesSettingsFragment extends PreferenceFragment implements
         super.onDestroy();
     }
 
+    public void updatePowerPlan(String value) {
+    String propValue;
+    switch (value) {
+        case "1":
+            propValue = POWERHAL_BATT;
+            break;
+        case "2":
+            propValue = POWERHAL_BALA;
+            break;
+        case "3":
+            propValue = POWERHAL_PERF;
+            break;
+        default:
+            propValue = null; // Handle unexpected value or no change
+    }
+    try {
+        if (propValue != null) {
+            // Write the prop value only if a valid option is selected
+            SystemProperties.set(POWERHAL_PROP, propValue);
+        }
+    } catch(Exception e) { }
+}
+
+
     @Override
     public boolean onPreferenceChange(Preference preference, Object newValue) {
         final String key = preference.getKey();
@@ -137,6 +167,7 @@ public class KprofilesSettingsFragment extends PreferenceFragment implements
                     intent.setFlags(Intent.FLAG_RECEIVER_REGISTERED_ONLY);
                     getContext().sendBroadcastAsUser(intent, UserHandle.CURRENT);
                 } catch(Exception e) { }
+                updatePowerPlan(value);
                 break;
         }
         return true;
